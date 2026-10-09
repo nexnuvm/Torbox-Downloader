@@ -1,0 +1,101 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:   # lets you trigger it manually from the Actions tab
+
+# Bump this if you ever need to force the aria2c binary to rebuild (e.g.
+# after deliberately changing ARIA2_VERSION below) -- actions/cache keys on
+# it, and the aria2 build itself (it compiles OpenSSL from source) is slow,
+# so this avoids redoing that on every single push.
+env:
+  ARIA2C_CACHE_VERSION: v1
+
+jobs:
+  # ------------------------------------------------------------------
+  # Builds aria2c for Android (arm64-v8a) using aria2's own official,
+  # maintained Android build recipe (Dockerfile.android, straight from
+  # github.com/aria2/aria2) -- not a third-party prebuilt binary. Cached so
+  # this only actually runs when the cache key below changes.
+  # ------------------------------------------------------------------
+  build-aria2c:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache aria2c binary
+        id: cache-aria2c
+        uses: actions/cache@v4
+        with:
+          path: aria2c-out/libaria2c.so
+          key: aria2c-android-arm64-${{ env.ARIA2C_CACHE_VERSION }}
+
+      - name: Clone aria2 (for its official Dockerfile.android)
+        if: steps.cache-aria2c.outputs.cache-hit != 'true'
+        run: git clone --depth 1 https://github.com/aria2/aria2.git aria2-src
+
+      - name: Build aria2c for Android via aria2's own Dockerfile.android
+        if: steps.cache-aria2c.outputs.cache-hit != 'true'
+        run: |
+          docker build -t aria2-android -f aria2-src/Dockerfile.android aria2-src
+          mkdir -p aria2c-out
+          docker run --rm -v "${{ github.workspace }}/aria2c-out:/out" aria2-android \
+            cp /root/build/aria2/src/aria2c /out/libaria2c.so
+          # Must be named lib*.so to survive packaging into jniLibs, even
+          # though it's a real executable, not a shared library -- this is
+          # the standard, documented way to ship a CLI tool inside an APK.
+
+      - name: Upload aria2c artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria2c-arm64-v8a
+          path: aria2c-out/libaria2c.so
+
+  # ------------------------------------------------------------------
+  # Builds the actual debug APK, with the aria2c binary from the job above
+  # dropped into app/src/main/jniLibs/arm64-v8a/ before Gradle runs.
+  # ------------------------------------------------------------------
+  build-apk:
+    needs: build-aria2c
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download aria2c binary
+        uses: actions/download-artifact@v4
+        with:
+          name: aria2c-arm64-v8a
+          path: app/src/main/jniLibs/arm64-v8a
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Python (used by the Chaquopy Gradle plugin at build time)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Android SDK + NDK
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: 25.2.9519653   # matches NDK r25c used to build aria2c above
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+          # No committed Gradle Wrapper in this repo (gradle-wrapper.jar is a
+          # compiled binary) -- this installs Gradle directly for CI instead.
+          # Android Studio will generate a wrapper automatically the first
+          # time you open this project locally, if you want one for local dev.
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: torbox-downloader-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk

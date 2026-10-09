@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Local config (machine-specific SDK path, never commit this)
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+.DS_Store
+
+# The aria2c binary is built fresh by the GitHub Actions workflow
+# (.github/workflows/build.yml) every run and downloaded into this path
+# just before Gradle runs -- it's a build artifact, not source, so it's
+# never committed.
+app/src/main/jniLibs/
+
+# Python bytecode cache from local testing
+**/__pycache__/
+*.pyc
+
+# Signing keys -- never commit a real release keystore
+*.jks
+*.keystore

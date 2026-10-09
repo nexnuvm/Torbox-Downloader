@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple placeholder mark: a downward arrow into a tray, standard
+         "download" glyph. Swap this out for real branding whenever you
+         like; it only needs to stay a vector path element to keep working
+         with the adaptive icon system without adding any binary image
+         assets. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30 L54,62 M54,62 L40,48 M54,62 L68,48 M34,74 L74,74 L74,82 L34,82 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

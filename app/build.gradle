@@ -1,0 +1,76 @@
+plugins {
+    id 'com.android.application'
+    id 'com.chaquo.python'
+}
+
+android {
+    namespace 'com.torbox.downloader'
+    compileSdk 34
+    // Pinned to match the NDK version the CI workflow installs
+    // (.github/workflows/build.yml) and the one used to build aria2c itself
+    // (NDK r25c) -- keeps both sides of the build consistent.
+    ndkVersion "25.2.9519653"
+
+    defaultConfig {
+        applicationId "com.torbox.downloader"
+        minSdk 26          // NotificationChannel requires API 26+
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        // arm64-v8a covers the overwhelming majority of real devices today.
+        // Add "armeabi-v7a" too if you need to support older/budget hardware --
+        // it just means cross-compiling aria2c for that ABI as well.
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+
+        python {
+            buildPython "python3"
+            pip {
+                // No extra pip packages needed -- the server only uses stdlib
+                // (sqlite3, http.server, urllib, json, threading, subprocess).
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    buildFeatures {
+        viewBinding false
+    }
+
+    // aria2c binaries go here, one per ABI you target. Android only allows
+    // executing files bundled this way as of API 23+ (they must be named
+    // lib*.so even though they are real ELF executables, not shared
+    // libraries -- this is the standard trick for shipping CLI tools inside
+    // an APK). At runtime they are extracted to
+    // applicationInfo.nativeLibraryDir and are directly executable by this
+    // app, exactly like the Termux copy was.
+    //
+    // app/src/main/jniLibs/arm64-v8a/libaria2c.so   <- rename your aria2c binary to this
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+}
