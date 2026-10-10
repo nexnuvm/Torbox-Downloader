@@ -6,10 +6,11 @@ buildscript {
     }
     dependencies {
         classpath "com.android.tools.build:gradle:8.5.0"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24"
         classpath "com.chaquo.python:gradle:15.0.1"
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
 }
