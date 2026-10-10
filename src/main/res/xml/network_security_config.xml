@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- The WebView loads http://127.0.0.1:8080/, which is the embedded
+         Python server (torbox_server.py): plain HTTP, since it never leaves
+         the device. Android blocks all cleartext traffic by default since
+         API 28, even to loopback, so this explicitly allows it for just
+         these two hosts. Every other request this app makes (TorBox's API)
+         already goes over HTTPS via urllib and is unaffected. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>
