@@ -77,19 +77,20 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set up Android SDK + NDK
-        uses: android-actions/setup-android@v3
-        with:
-          ndk-version: 25.2.9519653   # matches NDK r25c used to build aria2c above
+      - name: Accept Android SDK Licenses & Install NDK (r25c)
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653"
+
+      - name: Export NDK Environment Variables
+        run: |
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
-          # No committed Gradle Wrapper in this repo (gradle-wrapper.jar is a
-          # compiled binary) -- this installs Gradle directly for CI instead.
-          # Android Studio will generate a wrapper automatically the first
-          # time you open this project locally, if you want one for local dev.
 
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
@@ -99,3 +100,4 @@ jobs:
         with:
           name: torbox-downloader-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          
